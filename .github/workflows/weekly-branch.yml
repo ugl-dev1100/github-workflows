@@ -29,9 +29,6 @@ jobs:
       PIPELINES: ${{ inputs.pipelines }}
       GH_ORG: ${{ secrets.GH_ORG }}
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
       - name: Checkout Repository
@@ -44,6 +41,12 @@ jobs:
 
       - name: Install Dependencies
         run: pip install requests boto3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::670307493739:role/GitHubActionsCodePipelineRole
+          aws-region: ap-south-1
 
       - name: Run Branch Automation Script
         run: python branch_automation.py

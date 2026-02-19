@@ -34,70 +34,112 @@ HEADERS = {
 
 today = datetime.now()
 
+# # =====================================================
+# # DATE CALCULATION
+# # =====================================================
+
+# def get_next_wednesday():
+#     days_ahead = 2 - today.weekday()  # Wednesday = 2
+#     if days_ahead <= 0:
+#         days_ahead += 7
+#     return today + timedelta(days=days_ahead)
+
+# if ACTION_TYPE == "staging":
+#     branch_date = today.strftime("%Y-%m-%d")
+#     branch_name = f"staging-{branch_date}"
+# else:
+#     next_wed = get_next_wednesday()
+#     branch_date = next_wed.strftime("%Y-%m-%d")
+#     branch_name = f"uat-release-{branch_date}"
+
+# # =====================================================
+# # GITHUB HELPERS
+# # =====================================================
+
+# def branch_exists(repo, branch):
+#     url = f"https://api.github.com/repos/{ORG}/{repo}/branches/{branch}"
+#     r = requests.get(url, headers=HEADERS)
+#     return r.status_code == 200
+
+# def get_main_sha(repo):
+#     url = f"https://api.github.com/repos/{ORG}/{repo}/branches/main"
+#     r = requests.get(url, headers=HEADERS)
+#     if r.status_code != 200:
+#         return None
+#     return r.json()["commit"]["sha"]
+
+# def create_branch(repo, branch_name, sha):
+#     url = f"https://api.github.com/repos/{ORG}/{repo}/git/refs"
+#     data = {"ref": f"refs/heads/{branch_name}", "sha": sha}
+#     return requests.post(url, headers=HEADERS, json=data)
+
+# def delete_branch(repo, branch):
+#     url = f"https://api.github.com/repos/{ORG}/{repo}/git/refs/heads/{branch}"
+#     return requests.delete(url, headers=HEADERS)
+
+# def get_all_branches(repo):
+#     url = f"https://api.github.com/repos/{ORG}/{repo}/branches?per_page=100"
+#     r = requests.get(url, headers=HEADERS)
+#     if r.status_code != 200:
+#         return []
+#     return [b["name"] for b in r.json()]
+
+# def delete_previous_uat(repo, current_branch):
+#     branches = get_all_branches(repo)
+#     old_uat = sorted(
+#         [b for b in branches if b.startswith("uat-release-") and b != current_branch],
+#         reverse=True
+#     )
+#     if not old_uat:
+#         return 0
+#     deleted = 0
+#     for branch in old_uat:
+#         resp = delete_branch(repo, branch)
+#         if resp.status_code == 204:
+#             deleted += 1
+#     return deleted
+
 # =====================================================
 # DATE CALCULATION
 # =====================================================
 
-def get_next_wednesday():
-    days_ahead = 2 - today.weekday()  # Wednesday = 2
-    if days_ahead <= 0:
-        days_ahead += 7
-    return today + timedelta(days=days_ahead)
+def get_latest_uat_date(repo):
+    branches = get_all_branches(repo)
+    uat_branches = [
+        b.replace("uat-release-", "")
+        for b in branches
+        if b.startswith("uat-release-")
+    ]
+
+    if not uat_branches:
+        return None
+
+    try:
+        dates = sorted(
+            [datetime.strptime(d, "%Y-%m-%d") for d in uat_branches],
+            reverse=True
+        )
+        return dates[0]
+    except:
+        return None
+
 
 if ACTION_TYPE == "staging":
     branch_date = today.strftime("%Y-%m-%d")
     branch_name = f"staging-{branch_date}"
+
 else:
-    next_wed = get_next_wednesday()
-    branch_date = next_wed.strftime("%Y-%m-%d")
+    # For testing → Always add +1 day from latest UAT
+    sample_repo = REPOS[0]  # check from first repo
+    latest_date = get_latest_uat_date(sample_repo)
+
+    if latest_date:
+        new_date = latest_date + timedelta(days=1)
+    else:
+        new_date = today
+
+    branch_date = new_date.strftime("%Y-%m-%d")
     branch_name = f"uat-release-{branch_date}"
-
-# =====================================================
-# GITHUB HELPERS
-# =====================================================
-
-def branch_exists(repo, branch):
-    url = f"https://api.github.com/repos/{ORG}/{repo}/branches/{branch}"
-    r = requests.get(url, headers=HEADERS)
-    return r.status_code == 200
-
-def get_main_sha(repo):
-    url = f"https://api.github.com/repos/{ORG}/{repo}/branches/main"
-    r = requests.get(url, headers=HEADERS)
-    if r.status_code != 200:
-        return None
-    return r.json()["commit"]["sha"]
-
-def create_branch(repo, branch_name, sha):
-    url = f"https://api.github.com/repos/{ORG}/{repo}/git/refs"
-    data = {"ref": f"refs/heads/{branch_name}", "sha": sha}
-    return requests.post(url, headers=HEADERS, json=data)
-
-def delete_branch(repo, branch):
-    url = f"https://api.github.com/repos/{ORG}/{repo}/git/refs/heads/{branch}"
-    return requests.delete(url, headers=HEADERS)
-
-def get_all_branches(repo):
-    url = f"https://api.github.com/repos/{ORG}/{repo}/branches?per_page=100"
-    r = requests.get(url, headers=HEADERS)
-    if r.status_code != 200:
-        return []
-    return [b["name"] for b in r.json()]
-
-def delete_previous_uat(repo, current_branch):
-    branches = get_all_branches(repo)
-    old_uat = sorted(
-        [b for b in branches if b.startswith("uat-release-") and b != current_branch],
-        reverse=True
-    )
-    if not old_uat:
-        return 0
-    deleted = 0
-    for branch in old_uat:
-        resp = delete_branch(repo, branch)
-        if resp.status_code == 204:
-            deleted += 1
-    return deleted
 
 # =====================================================
 # CODEPIPELINE UPDATE
