@@ -2,7 +2,7 @@ name: Weekly Branch Automation
 
 on:
   schedule:
-    - cron: "33 9 * * *"
+    cron: "41 5 * * *"
   workflow_dispatch:
 
 jobs:
