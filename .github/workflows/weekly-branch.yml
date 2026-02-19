@@ -46,7 +46,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::670307493739:role/GithubActiotnsCodePiplineSourceBranchUpdateSiva
-          aws-region: ap-south-1
+          aws-region: us-east-1
 
       - name: Run Branch Automation Script
         run: python branch_automation.py
