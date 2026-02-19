@@ -246,6 +246,10 @@ if not ACTION_TYPE or ACTION_TYPE not in ["staging", "uat"]:
 
 REPOS = [r.strip() for r in REPO_INPUT.split(",") if r.strip()]
 
+if not REPOS:
+    print("❌ No repositories provided")
+    sys.exit(1)
+
 HEADERS = {
     "Authorization": f"Bearer {TOKEN}",
     "Accept": "application/vnd.github+json"
@@ -254,7 +258,7 @@ HEADERS = {
 today = datetime.now()
 
 # =====================================================
-# 🔴 ORIGINAL PRODUCTION LOGIC (COMMENTED)
+# ORIGINAL UAT LOGIC (COMMENTED)
 # =====================================================
 
 # def get_next_wednesday():
@@ -262,64 +266,56 @@ today = datetime.now()
 #     if days_ahead <= 0:
 #         days_ahead += 7
 #     return today + timedelta(days=days_ahead)
-
-# if ACTION_TYPE == "staging":
-#     # Every Wednesday create staging-YYYY-MM-DD
-#     branch_date = today.strftime("%Y-%m-%d")
-#     branch_name = f"staging-{branch_date}"
 #
-# else:
-#     # Every Thursday create UAT-release-nextWednesday
+# if ACTION_TYPE == "uat":
 #     next_wed = get_next_wednesday()
 #     branch_date = next_wed.strftime("%Y-%m-%d")
 #     branch_name = f"uat-release-{branch_date}"
 
-# -----------------------------------------------------
-# ORIGINAL UAT DELETE LOGIC (COMMENTED)
-# -----------------------------------------------------
-
-# def delete_previous_uat(repo, current_branch):
-#     branches = get_all_branches(repo)
-#     old_uat = sorted(
-#         [b for b in branches if b.startswith("uat-release-") and b != current_branch],
-#         reverse=True
-#     )
-#
-#     if not old_uat:
-#         return 0
-#
-#     deleted = 0
-#     for branch in old_uat:
-#         resp = delete_branch(repo, branch)
-#         if resp.status_code == 204:
-#             deleted += 1
-#
-#     return deleted
-
 # =====================================================
-# 🟢 TESTING MODE LOGIC (+1 DAY FOR BOTH)
+# TESTING DATE LOGIC (+1 DAY FOR UAT)
 # =====================================================
 
-def get_latest_date(repo, prefix):
+def get_all_branches(repo):
+    url = f"https://api.github.com/repos/{ORG}/{repo}/branches?per_page=100"
+    r = requests.get(url, headers=HEADERS)
+    if r.status_code != 200:
+        return []
+    return [b["name"] for b in r.json()]
+
+
+def get_latest_uat_date(repo):
     branches = get_all_branches(repo)
-    filtered = [
-        b.replace(prefix, "")
-        for b in branches
-        if b.startswith(prefix)
-    ]
+    uat_dates = []
 
-    if not filtered:
+    for b in branches:
+        if b.startswith("uat-release-"):
+            try:
+                date_str = b.replace("uat-release-", "")
+                uat_dates.append(datetime.strptime(date_str, "%Y-%m-%d"))
+            except:
+                continue
+
+    if not uat_dates:
         return None
 
-    try:
-        dates = sorted(
-            [datetime.strptime(d, "%Y-%m-%d") for d in filtered],
-            reverse=True
-        )
-        return dates[0]
-    except:
-        return None
+    return sorted(uat_dates, reverse=True)[0]
 
+
+if ACTION_TYPE == "staging":
+    branch_date = today.strftime("%Y-%m-%d")
+    branch_name = f"staging-{branch_date}"
+else:
+    sample_repo = REPOS[0]
+    latest_date = get_latest_uat_date(sample_repo)
+
+    if latest_date:
+        new_date = latest_date + timedelta(days=1)
+    else:
+        new_date = today
+
+    branch_date = new_date.strftime("%Y-%m-%d")
+    branch_name = f"uat-release-{branch_date}"
 
 # =====================================================
 # GITHUB HELPERS
@@ -330,6 +326,7 @@ def branch_exists(repo, branch):
     r = requests.get(url, headers=HEADERS)
     return r.status_code == 200
 
+
 def get_main_sha(repo):
     url = f"https://api.github.com/repos/{ORG}/{repo}/branches/main"
     r = requests.get(url, headers=HEADERS)
@@ -337,53 +334,60 @@ def get_main_sha(repo):
         return None
     return r.json()["commit"]["sha"]
 
+
 def create_branch(repo, branch_name, sha):
     url = f"https://api.github.com/repos/{ORG}/{repo}/git/refs"
     data = {"ref": f"refs/heads/{branch_name}", "sha": sha}
     return requests.post(url, headers=HEADERS, json=data)
 
+
 def delete_branch(repo, branch):
     url = f"https://api.github.com/repos/{ORG}/{repo}/git/refs/heads/{branch}"
     return requests.delete(url, headers=HEADERS)
 
-def get_all_branches(repo):
-    url = f"https://api.github.com/repos/{ORG}/{repo}/branches?per_page=100"
-    r = requests.get(url, headers=HEADERS)
-    if r.status_code != 200:
-        return []
-    return [b["name"] for b in r.json()]
+
+def delete_previous_uat(repo, current_branch):
+    branches = get_all_branches(repo)
+
+    old_uat = sorted(
+        [b for b in branches if b.startswith("uat-release-") and b != current_branch],
+        reverse=True
+    )
+
+    if not old_uat:
+        return 0
+
+    deleted = 0
+
+    for branch in old_uat:
+        resp = delete_branch(repo, branch)
+        if resp.status_code == 204:
+            print(f"   🗑 Deleted old branch: {branch}")
+            deleted += 1
+        else:
+            print(f"   ⚠ Failed to delete: {branch}")
+
+    return deleted
+
 
 # =====================================================
-# DATE GENERATION (TESTING MODE)
+# CODEPIPELINE LOGIC (COMMENTED FOR NOW)
 # =====================================================
 
-sample_repo = REPOS[0]
-
-if ACTION_TYPE == "staging":
-    prefix = "staging-"
-else:
-    prefix = "uat-release-"
-
-latest_date = get_latest_date(sample_repo, prefix)
-
-if latest_date:
-    new_date = latest_date + timedelta(days=1)
-else:
-    new_date = today
-
-branch_date = new_date.strftime("%Y-%m-%d")
-
-if ACTION_TYPE == "staging":
-    branch_name = f"staging-{branch_date}"
-else:
-    branch_name = f"uat-release-{branch_date}"
-
-# =====================================================
-# 🔴 ORIGINAL PIPELINE UPDATE LOGIC (COMMENTED)
-# =====================================================
-
+# import boto3
+#
 # def update_codepipeline_branch(pipeline_name, new_branch):
-#     pass
+#     client = boto3.client("codepipeline", region_name="ap-south-1")
+#     response = client.get_pipeline(name=pipeline_name)
+#     pipeline = response["pipeline"]
+#
+#     for stage in pipeline["stages"]:
+#         if stage["name"].lower() == "source":
+#             for action in stage["actions"]:
+#                 if "BranchName" in action["configuration"]:
+#                     action["configuration"]["BranchName"] = new_branch
+#
+#     client.update_pipeline(pipeline=pipeline)
 
 # =====================================================
 # EXECUTION
@@ -396,6 +400,7 @@ print("--------------------------------------------------")
 
 success = 0
 failed = 0
+deleted_total = 0
 
 for repo in REPOS:
 
@@ -416,12 +421,19 @@ for repo in REPOS:
     if resp.status_code == 201:
         print("   ✅ Branch created")
         success += 1
+
+        if ACTION_TYPE == "uat":
+            deleted = delete_previous_uat(repo, branch_name)
+            deleted_total += deleted
+            print(f"   🗑 Total old UAT deleted: {deleted}")
     else:
-        print("   ❌ Failed to create branch")
+        print(f"   ❌ Failed to create branch ({resp.status_code})")
         failed += 1
 
 print("\n--------------------------------------------------")
 print("✅ Completed")
 print(f"Success: {success}")
 print(f"Failed: {failed}")
+print(f"Deleted Old UAT: {deleted_total}")
 print("--------------------------------------------------")
+
