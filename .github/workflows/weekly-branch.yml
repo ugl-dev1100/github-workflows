@@ -22,6 +22,10 @@ on:
 jobs:
   branch-automation:
     runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write      # ← Required for OIDC
+      contents: read       # ← Required to checkout code
 
     env:
       ACTION_TYPE: ${{ inputs.action_type }}
