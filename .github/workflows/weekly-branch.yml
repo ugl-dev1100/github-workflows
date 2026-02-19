@@ -1,9 +1,60 @@
-name: Weekly Branch Automation
+# name: Weekly Branch Automation
+
+# on:
+#   schedule:
+#    - cron: "43 5 * * *"
+#   workflow_dispatch:
+
+# jobs:
+#   branch-automation:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: "3.11"
+
+#       - run: pip install requests
+
+#       - name: Run Script
+#         env:
+#           GH_ORG: ${{ secrets.GH_ORG }}
+#           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#           QA_SLACK_WEBHOOK: ${{ secrets.QA_SLACK_WEBHOOK }}
+#         run: python branch_automation.py
+
+#       - name: DevOps Crash Alert
+#         if: failure()
+#         run: |
+#           curl -X POST -H 'Content-type: application/json' \
+#           --data '{
+#             "text": "🚨 Branch Automation FAILED\nRepo: '${{ github.repository }}'\nRun: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'"
+#           }' \
+#           ${{ secrets.DEVOPS_SLACK_WEBHOOK }}
+name: Branch Automation (Manual)
 
 on:
-  schedule:
-   - cron: "43 5 * * *"
   workflow_dispatch:
+    inputs:
+      action_type:
+        description: "Choose action"
+        required: true
+        type: choice
+        options:
+          - staging
+          - uat
+
+      repos:
+        description: "Comma separated repos"
+        required: true
+        default: "web,reports,traceui2,one-freight-ui"
+
+      triggered_by:
+        description: "Your Name"
+        required: true
+        default: "SivaRamaKrishna"
 
 jobs:
   branch-automation:
@@ -23,6 +74,10 @@ jobs:
           GH_ORG: ${{ secrets.GH_ORG }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           QA_SLACK_WEBHOOK: ${{ secrets.QA_SLACK_WEBHOOK }}
+          DEVOPS_SLACK_WEBHOOK: ${{ secrets.DEVOPS_SLACK_WEBHOOK }}
+          ACTION_TYPE: ${{ github.event.inputs.action_type }}
+          REPO_LIST: ${{ github.event.inputs.repos }}
+          TRIGGERED_BY: ${{ github.event.inputs.triggered_by }}
         run: python branch_automation.py
 
       - name: DevOps Crash Alert
@@ -30,6 +85,6 @@ jobs:
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data '{
-            "text": "🚨 Branch Automation FAILED\nRepo: '${{ github.repository }}'\nRun: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'"
+            "text": "🚨 Branch Automation FAILED\nRepository: '${{ github.repository }}'\nRun: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'"
           }' \
           ${{ secrets.DEVOPS_SLACK_WEBHOOK }}
