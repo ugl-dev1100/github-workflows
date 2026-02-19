@@ -25,7 +25,7 @@ if not ACTION_TYPE or ACTION_TYPE not in ["staging", "uat"]:
     sys.exit(1)
 
 REPOS = [r.strip() for r in REPO_INPUT.split(",") if r.strip()]
-PIPELINES = [p.strip() for p in PIPELINE_INPUT.split(",") if p.strip()]
+# PIPELINES = [p.strip() for p in PIPELINE_INPUT.split(",") if p.strip()]
 
 HEADERS = {
     "Authorization": f"Bearer {TOKEN}",
