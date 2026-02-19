@@ -22,10 +22,10 @@ on:
 jobs:
   branch-automation:
     runs-on: ubuntu-latest
-    
-    permissions:
-      id-token: write      # ← Required for OIDC
-      contents: read       # ← Required to checkout code
+
+    # permissions:
+    #   id-token: write      # ← Required for OIDC
+    #   contents: read       # ← Required to checkout code
 
     env:
       ACTION_TYPE: ${{ inputs.action_type }}
@@ -46,11 +46,11 @@ jobs:
       - name: Install Dependencies
         run: pip install requests boto3
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::670307493739:role/GithubActiotnsCodePiplineSourceBranchUpdateSiva
-          aws-region: us-east-1
+      # - name: Configure AWS Credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: arn:aws:iam::670307493739:role/GithubActiotnsCodePiplineSourceBranchUpdateSiva
+      #     aws-region: us-east-1
 
       - name: Run Branch Automation Script
         run: python branch_automation.py
