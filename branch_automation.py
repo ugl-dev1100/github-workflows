@@ -396,9 +396,13 @@ for repo in REPOS:
 qa_message = f"""
 Hi Team,
 
-🌿 *{branch_name}* branch has been created successfully.
+{branch_name} branch has been successfully created for this week.
+Please proceed with validation.
 
-Triggered By: {TRIGGERED_BY}
+Regards,
+{TRIGGERED_BY}
+DevOps Team
+"""
 """
 
 send_slack(QA_SLACK_WEBHOOK, qa_message)
