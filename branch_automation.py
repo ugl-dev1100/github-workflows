@@ -403,7 +403,6 @@ Regards,
 {TRIGGERED_BY}
 DevOps Team
 """
-"""
 
 send_slack(QA_SLACK_WEBHOOK, qa_message)
 
