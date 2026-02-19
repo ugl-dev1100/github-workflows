@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 ACTION_TYPE = os.getenv("ACTION_TYPE", "").lower()
 REPO_INPUT = os.getenv("REPOS", "")
-PIPELINE_INPUT = os.getenv("PIPELINES", "")
+# PIPELINE_INPUT = os.getenv("PIPELINES", "")
 
 ORG = os.getenv("GH_ORG")
 TOKEN = os.getenv("GH_TOKEN")
@@ -145,20 +145,20 @@ else:
 # CODEPIPELINE UPDATE
 # =====================================================
 
-def update_codepipeline_branch(pipeline_name, new_branch):
-    client = boto3.client("codepipeline", region_name=AWS_REGION)
+# def update_codepipeline_branch(pipeline_name, new_branch):
+#     client = boto3.client("codepipeline", region_name=AWS_REGION)
 
-    response = client.get_pipeline(name=pipeline_name)
-    pipeline = response["pipeline"]
+#     response = client.get_pipeline(name=pipeline_name)
+#     pipeline = response["pipeline"]
 
-    for stage in pipeline["stages"]:
-        if stage["name"].lower() == "source":
-            for action in stage["actions"]:
-                if "BranchName" in action["configuration"]:
-                    action["configuration"]["BranchName"] = new_branch
-                    print(f"🔄 {pipeline_name} updated → {new_branch}")
+#     for stage in pipeline["stages"]:
+#         if stage["name"].lower() == "source":
+#             for action in stage["actions"]:
+#                 if "BranchName" in action["configuration"]:
+#                     action["configuration"]["BranchName"] = new_branch
+#                     print(f"🔄 {pipeline_name} updated → {new_branch}")
 
-    client.update_pipeline(pipeline=pipeline)
+#     client.update_pipeline(pipeline=pipeline)
 
 # =====================================================
 # EXECUTION
@@ -205,18 +205,18 @@ for repo in REPOS:
 # UPDATE CODEPIPELINES (Only for UAT)
 # =====================================================
 
-if ACTION_TYPE == "uat" and PIPELINES:
-    print("\n🚀 Updating CodePipelines...\n")
-    for pipeline in PIPELINES:
-        try:
-            update_codepipeline_branch(pipeline, branch_name)
-            print(f"   ✅ {pipeline} updated")
-        except Exception as e:
-            print(f"   ❌ Failed to update {pipeline}: {str(e)}")
+# if ACTION_TYPE == "uat" and PIPELINES:
+#     print("\n🚀 Updating CodePipelines...\n")
+#     for pipeline in PIPELINES:
+#         try:
+#             update_codepipeline_branch(pipeline, branch_name)
+#             print(f"   ✅ {pipeline} updated")
+#         except Exception as e:
+#             print(f"   ❌ Failed to update {pipeline}: {str(e)}")
 
-print("\n--------------------------------------------------")
-print("✅ Completed")
-print(f"Success: {success}")
-print(f"Failed: {failed}")
-print(f"Deleted Old UAT: {deleted_count}")
-print("--------------------------------------------------")
+# print("\n--------------------------------------------------")
+# print("✅ Completed")
+# print(f"Success: {success}")
+# print(f"Failed: {failed}")
+# print(f"Deleted Old UAT: {deleted_count}")
+# print("--------------------------------------------------")
