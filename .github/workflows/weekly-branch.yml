@@ -15,9 +15,9 @@ on:
         description: "Comma separated repository names (example: web,reports,traceui2)"
         required: true
 
-      pipelines:
-        description: "Comma separated CodePipeline names (Required for UAT)"
-        required: false
+      # pipelines:
+      #   description: "Comma separated CodePipeline names (Required for UAT)"
+      #   required: false
 
 jobs:
   branch-automation:
