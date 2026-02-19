@@ -395,9 +395,7 @@ for repo in REPOS:
 # QA Channel Message
 qa_message = f"""
 Hi Team,
-
-{branch_name} branch has been successfully created for this week.
-Please proceed with validation.
+{branch_name} 🌿 has been successfully created for this week.
 
 Regards,
 {TRIGGERED_BY}
