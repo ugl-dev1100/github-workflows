@@ -53,4 +53,4 @@ jobs:
       #     aws-region: us-east-1
 
       - name: Run Branch Automation Script
-        run: python testing-branch .py
+        run: python testing-branch.py
