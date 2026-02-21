@@ -123,21 +123,36 @@ else:
 # =====================================================
 
 import boto3
+import os
+
 AWS_REGION = os.getenv("AWS_REGION")
 PIPELINE_INPUT = os.getenv("PIPELINES", "")
 PIPELINES = [p.strip() for p in PIPELINE_INPUT.split(",") if p.strip()]
 
 def update_codepipeline_branch(pipeline_name, new_branch):
     client = boto3.client("codepipeline", region_name=AWS_REGION)
+
+    # Get existing pipeline
     response = client.get_pipeline(name=pipeline_name)
     pipeline = response["pipeline"]
+
+    # Update branch in Source stage
     for stage in pipeline["stages"]:
         if stage["name"].lower() == "source":
             for action in stage["actions"]:
                 if "BranchName" in action["configuration"]:
                     action["configuration"]["BranchName"] = new_branch
                     print(f"🔄 {pipeline_name} updated → {new_branch}")
+
+    # Update pipeline configuration
     client.update_pipeline(pipeline=pipeline)
+    print(f"✅ {pipeline_name} configuration updated")
+
+    # 🚀 Trigger execution immediately
+    execution = client.start_pipeline_execution(name=pipeline_name)
+
+    print(f"🚀 {pipeline_name} execution started")
+    print(f"Execution ID: {execution['pipelineExecutionId']}")
 
 # =====================================================
 # EXECUTION
