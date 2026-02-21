@@ -17,7 +17,7 @@ on:
 
       pipelines:
         description: "Comma separated CodePipeline names (Required for UAT)"
-        required: false
+        required: true
 
 jobs:
   branch-automation:
